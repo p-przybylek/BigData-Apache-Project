@@ -9,10 +9,13 @@ A repository for a team project with Big Data.
 3. Paulina Przybyłek
 
 ## Project subject
+
 Design and implementation of a data storage tool on press articles and analysis of their headlines.
 
 ### The goal of the project
+
 The project will focus on performance and the solution will be designed with expansiveness in mind. Implemented solution will be highly scalable and will be able to process a high volume of data.
 
 ### Technology stack
-The project will be the flow for data from [News API](https://newsapi.org/).  The data will be preprocessed by Apache NiFi. Preprocessed data it will be stored in Apache HBase. When the appropriate amount of data will be collected, the data will be processed (analiza wsadowa?) by Apache Spark, and the results will be stored in Apache Hive.
+
+The project will be the flow of data from [News API](https://newsapi.org/).  The data will be acquired and preprocessed by Apache NiFi. Preprocessed data will be stored in Apache HBase. When the appropriate amount of data will be collected, the data will be batch processed by Apache Spark, and the results will be stored in Apache Hive.
