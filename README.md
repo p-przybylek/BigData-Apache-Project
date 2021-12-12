@@ -22,8 +22,8 @@ The project will be the flow of data from [Free News API](https://free-docs.news
 
 ### Business plan
 
-The project will store data about articles such as the title, summary, published_date, topic, twitter_account of the publisher (e.g. @nytimes) and data about the publisher's Twitter account such as localization, followers, retweets (of a tweet about the article of discourse), number of followers.
+The project will store data about articles such as the title, summary, published_date, topic, twitter_account of the publisher (e.g. @nytimes) and data about the publisher's Twitter account such as localization, followers, number of followers. Also, the number of tweets about the article 24 hours after publishing will be stored.
 
-We will compare the sentiment of a summary with the sentiment of the retweets and/or topic and/or location of a publisher and/or number of Twitter followers.
+We will compare the sentiment of a summary with the amount of the tweets and/or topic and/or location of a publisher and/or number of Twitter followers.
 
-This could provide meaningful information for authors about their audience and their's preferences.
+This could provide meaningful information for authors about their audience and their's audience's preferences.
