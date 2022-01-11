@@ -18,7 +18,7 @@ The project will focus on performance and the solution will be designed with exp
 
 ### Technology stack
 
-The project will be the flow of data from [Free News API](https://free-docs.newscatcherapi.com/) and [Twitter API](https://developer.twitter.com/en/docs/twitter-api). The data will be acquired and preprocessed by Apache NiFi (including fusion of APIs). Preprocessed data will be stored in Apache HBase. When the appropriate amount of data will be collected, the data will be batch processed by Apache Spark, and the results will be stored in Apache Hive.
+The project will be the flow of data from [Free News API](https://free-docs.newscatcherapi.com/) and [Twitter API](https://developer.twitter.com/en/docs/twitter-api). The data will be acquired and preprocessed by Apache NiFi (including fusion of APIs). Raw and preprocessed data will be stored in HDFS. When the appropriate amount of data will be collected, the data will be batch processed by Apache Spark, and the results will be stored in Apache HBase.
 
 ### Business plan
 
