@@ -1,0 +1,16 @@
+CREATE TABLE articles_test (article_id STRING, article_published_date STRING, 
+                            article_title STRING, article_author STRING, 
+                            article_topic STRING, article_country STRING, 
+                            article_language STRING, 
+                            article_is_opinion BOOLEAN, 
+                            article_querry STRING, 
+                            article_summary STRING, 
+                            article_number_of_tweets INT, 
+                            twitter_published_id BIGINT, 
+                            twitter_account STRING, 
+                            twitter_publisher_name STRING, 
+                            twitter_location STRING, 
+                            publisher_followers_count INT, 
+                            twitter_list_count INT, 
+                            publisher_number_of_tweets INT)
+STORED AS AVRO;
