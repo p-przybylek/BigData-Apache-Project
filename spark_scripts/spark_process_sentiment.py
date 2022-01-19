@@ -10,6 +10,27 @@ spark = SparkSession.builder \
 	.appName("Process articles")\
 	.master("local[2]").enableHiveSupport().getOrCreate()
 
+def get_file_name(table, column_family):
+    sep = '-'
+    dir_path = "/user/chojeckip/project/hbase_buffer/"
+    fs = spark._jvm.org.apache.hadoop.fs.FileSystem.get(spark._jsc.hadoopConfiguration())
+    list_status = fs.listStatus(spark._jvm.org.apache.hadoop.fs.Path(dir_path))
+    result = [file.getPath().getName() for file in list_status]
+
+    filename_root = f'{table}{sep}{column_family}'
+    filename_suffix = 0
+    filename = filename_root + sep + str(filename_suffix) + '.parquet'
+    while filename in result:
+        filename_suffix += 1
+        filename = filename_root + sep + str(filename_suffix) + '.parquet'
+    print('--- filename ---')
+    print(filename)
+    return 'hdfs://localhost:8020' + dir_path + filename
+
+def write_parquet(df, table, column_family):
+    filename = get_file_name(table, column_family)
+    df.write.parquet(filename)
+
 articles = spark.sql("SELECT * FROM default.articles_test")
 print('--- articles ---')
 print(articles.printSchema())
@@ -32,6 +53,7 @@ print(confident_sentiment.show(truncate=False))
 # Publisher's summary
 publishers_query = """ 
 SELECT twitter_publisher_name,
+    twitter_publisher_id AS row_key,
     COUNT(*) AS total_published_articles,
     SUM(CAST(article_is_opinion AS INT)) AS total_published_opinions,
     ROUND(SUM(CAST(article_is_opinion AS INT)) / COUNT(*), 3) AS published_opinions_fraction,
@@ -39,7 +61,7 @@ SELECT twitter_publisher_name,
     SUM(article_number_of_tweets) AS tweets_mentioning_articles_sum
 FROM default.articles_test
 WHERE twitter_publisher_name IS NOT NULL
-GROUP BY twitter_publisher_name
+GROUP BY twitter_publisher_id, twitter_publisher_name
 ORDER BY total_published_articles DESC"""
 publishers = spark.sql(publishers_query)
 print('--- publishers ---')
@@ -50,12 +72,13 @@ print(publishers.show())
 # topics summary
 topics_query = """ 
 SELECT article_topic,
+    article_topic AS row_key,
     COUNT(*) AS total_published_articles,
     SUM(CAST(article_is_opinion AS INT)) AS total_published_opinions,
     ROUND(SUM(CAST(article_is_opinion AS INT)) / COUNT(*), 3) AS published_opinions_fraction,
     SUM(article_number_of_tweets) AS tweets_mentioning_articles_sum
 FROM default.articles_test
-GROUP BY article_topic
+describeGROUP BY article_topic
 ORDER BY total_published_articles DESC
 """ 
 topics = spark.sql(topics_query)
@@ -63,4 +86,12 @@ topics = spark.sql(topics_query)
 print('--- topics ---')
 print(topics.printSchema())
 print(topics.show())
+
+# column families: article_stats, twitter_stats, name
+
+table = 'topics_test'
+write_parquet(topics.select('row_key', 'article_topic'), table, 'name')
+write_parquet(topics.select('row_key', 'total_published_articles', 'total_published_opinions', 'published_opinions_fraction'),
+              table, 'article_stats')
+write_parqute(topics.select('row_key', 'tweets_mentioning_articles_sum'), table, 'twitter_stats')
 
