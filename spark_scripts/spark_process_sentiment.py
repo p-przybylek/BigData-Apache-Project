@@ -32,9 +32,9 @@ def write_parquet(df, table, column_family):
     df.write.parquet(filename)
 
 articles = spark.sql("SELECT * FROM default.articles_test")
-print('--- articles ---')
-print(articles.printSchema())
-print(articles.show())
+#print('--- articles ---')
+#print(articles.printSchema())
+#print(articles.show())
 
 # Sentiment
 pipeline = PretrainedPipeline('analyze_sentiment', lang='en')
@@ -48,7 +48,7 @@ annotations_added = annotations.withColumn('confident_positive_sentiment', (anno
 annotations_added.createOrReplaceTempView('articles_with_sentiment')
 
 confident_sentiment = spark.sql('SELECT article_title, sentiment, sentiment_confidence, confident_positive_sentiment, confident_negative_sentiment FROM articles_with_sentiment ORDER BY sentiment_confidence DESC')
-print(confident_sentiment.show(truncate=False))
+#print(confident_sentiment.show(truncate=False))
 
 # Publisher's summary
 publishers_query = """ 
@@ -57,28 +57,37 @@ SELECT twitter_publisher_name,
     COUNT(*) AS total_published_articles,
     SUM(CAST(article_is_opinion AS INT)) AS total_published_opinions,
     ROUND(SUM(CAST(article_is_opinion AS INT)) / COUNT(*), 3) AS published_opinions_fraction,
+    ROUND(SUM(CAST(confident_positive_sentiment AS INT) / COUNT(*), 3) AS articles_with_positive_sentiment_fraction,
+    ROUND(SUM(CAST(confident_negative_sentiment AS INT) / COUNT(*), 3) AS articles_with_negative_sentiment_fraction,
     MAX(publisher_followers_count) as publisher_followers,
     SUM(article_number_of_tweets) AS tweets_mentioning_articles_sum
-FROM default.articles_test
+FROM articles_with_sentiment
 WHERE twitter_publisher_name IS NOT NULL
 GROUP BY twitter_publisher_id, twitter_publisher_name
 ORDER BY total_published_articles DESC"""
 publishers = spark.sql(publishers_query)
 print('--- publishers ---')
-print(publishers.printSchema())
-print(publishers.show())
+#print(publishers.printSchema())
+#print(publishers.show())
 
+#column families: name, article_stats, twiter_stats
+table = 'publishers_test'
+write_parquet(publishers.select('row_key', 'twitter_publisher_name'), table, 'name')
+write_parquet(publishers.select('row_key', 'total_published_articles', 'total_published_opinions', 'published_opinions_fraction', 'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
+              table, 'article_stats')
+write_parquet(publishers.select('row_key', 'publisher_followers', 'tweets_mentioning_articles_sum'),
+              table, 'twitter_stats')
 
 # topics summary
 topics_query = """ 
 SELECT article_topic,
     article_topic AS row_key,
     COUNT(*) AS total_published_articles,
-    SUM(CAST(article_is_opinion AS INT)) AS total_published_opinions,
-    ROUND(SUM(CAST(article_is_opinion AS INT)) / COUNT(*), 3) AS published_opinions_fraction,
+    ROUND(SUM(CAST(confident_positive_sentiment AS INT) / COUNT(*), 3) AS articles_with_positive_sentiment_fraction,
+    ROUND(SUM(CAST(confident_negative_sentiment AS INT) / COUNT(*), 3) AS articles_with_negative_sentiment_fraction,
     SUM(article_number_of_tweets) AS tweets_mentioning_articles_sum
 FROM default.articles_test
-describeGROUP BY article_topic
+GROUP BY article_topic
 ORDER BY total_published_articles DESC
 """ 
 topics = spark.sql(topics_query)
@@ -91,7 +100,7 @@ print(topics.show())
 
 table = 'topics_test'
 write_parquet(topics.select('row_key', 'article_topic'), table, 'name')
-write_parquet(topics.select('row_key', 'total_published_articles', 'total_published_opinions', 'published_opinions_fraction'),
+write_parquet(topics.select('row_key', 'total_published_articles', 'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
               table, 'article_stats')
-write_parqute(topics.select('row_key', 'tweets_mentioning_articles_sum'), table, 'twitter_stats')
+write_parquet(topics.select('row_key', 'tweets_mentioning_articles_sum'), table, 'twitter_stats')
 
