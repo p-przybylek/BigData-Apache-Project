@@ -1,4 +1,4 @@
-CREATE TABLE articles (ID STRING, 
+CREATE TABLE articles (id STRING, 
                        published_date STRING, 
                        title STRING,  
                        author STRING, 
