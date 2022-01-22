@@ -1,4 +1,4 @@
-CREATE TABLE articles (id STRING, 
+CREATE TABLE articles (ID STRING, 
                        published_date STRING, 
                        title STRING,  
                        author STRING, 
@@ -7,6 +7,6 @@ CREATE TABLE articles (id STRING,
                        language STRING, 
                        is_opinion BOOLEAN, 
                        querry STRING, 
-                       summary STRING, 
-                       number_of_tweets INT)
+                       summary STRING,
+                       my_timestamp BIGINT)
 STORED AS AVRO;
