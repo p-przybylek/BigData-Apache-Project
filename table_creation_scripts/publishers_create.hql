@@ -1,4 +1,6 @@
-CREATE TABLE publishers (twitter_id BIGINT, 
+CREATE TABLE publishers (id STRING,
+                         article_id STRING,
+                         twitter_id BIGINT, 
                          twitter_account STRING, 
                          publisher_name STRING, 
                          location STRING, 
