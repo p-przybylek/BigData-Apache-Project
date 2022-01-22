@@ -31,14 +31,14 @@ def write_to_file(df, table, column_family):
     filename = get_file_name(table, column_family)
     df.write.parquet(filename)
 
-articles = spark.sql("SELECT * FROM default.articles_test")
+articles = spark.sql("SELECT * FROM default.articles")
 #print('--- articles ---')
 #print(articles.printSchema())
 #print(articles.show())
 
 # Sentiment
 pipeline = PretrainedPipeline('analyze_sentiment', lang='en')
-raw_annotations = pipeline.fullAnnotate(articles.withColumn('text', articles['article_title']), column='text')\
+raw_annotations = pipeline.fullAnnotate(articles.withColumn('text', articles['title']), column='text')\
                   .withColumnRenamed('sentiment', 'raw_sentiment')
 annotations = raw_annotations.withColumn('sentiment', raw_annotations['raw_sentiment']['result'][0])\
                              .withColumn('sentiment_confidence', raw_annotations['raw_sentiment']['metadata'][0]['confidence'])\
@@ -47,7 +47,32 @@ annotations_added = annotations.withColumn('confident_positive_sentiment', (anno
                                .withColumn('confident_negative_sentiment', (annotations['sentiment'] == 'negative') & (annotations['sentiment_confidence'] > 0.5)) 
 annotations_added.createOrReplaceTempView('articles_with_sentiment')
 
-confident_sentiment = spark.sql('SELECT article_title, sentiment, sentiment_confidence, confident_positive_sentiment, confident_negative_sentiment FROM articles_with_sentiment ORDER BY sentiment_confidence DESC')
+print('--- articles_tweets ---')
+print(annotations_added.printSchema())
+print(annotations_added.show())
+
+
+join_tweets_query = """ 
+SELECT articles_with_sentiment.id, 
+    FIRST(articles_with_sentiment.published_date) AS published_date,
+    FIRST(articles_with_sentiment.title) AS title,
+    FIRST(articles_with_sentiment.author) AS author,
+    FIRST(articles_with_sentiment.topic) AS topic,
+    FIRST(articles_with_sentiment.is_opinion) AS is_opinion,
+    FIRST(articles_with_sentiment.confident_positive_sentiment) AS confident_positive_sentiment,
+    FIRST(articles_with_sentiment.confident_negative_sentiment) AS confident_negative_sentiment,
+    SUM(CASE tweets.id IS NULL THEN 0 ELSE 1) as article_number_of_tweets
+FROM tweets RIGHT JOIN articles_with_sentiment ON tweets.article_id=articles_with_sentiment.id
+GROUP BY articles_with_sentiment.id
+"""
+articles_tweets = spark.sql(join_tweets_query)
+articles_tweets.createOrReplaceTempView('articles_tweets')
+
+print('--- articles_tweets ---')
+print(articles_tweets.printSchema())
+print(articles_tweets.show())
+
+#confident_sentiment = spark.sql('SELECT article_title, sentiment, sentiment_confidence, confident_positive_sentiment, confident_negative_sentiment FROM articles_with_sentiment ORDER BY sentiment_confidence DESC')
 #print(confident_sentiment.show(truncate=False))
 
 # Publisher's summary
@@ -61,46 +86,46 @@ SELECT twitter_publisher_name,
     ROUND(SUM(CAST(confident_negative_sentiment AS INT)) / COUNT(*), 3) AS articles_with_negative_sentiment_fraction,
     MAX(publisher_followers_count) as publisher_followers,
     SUM(article_number_of_tweets) AS tweets_mentioning_articles_sum
-FROM articles_with_sentiment
+FROM publishers JOIN articles_with_sentiment ON publishers.article_id=articles_with_sentiment.id
 WHERE twitter_publisher_name IS NOT NULL
 GROUP BY twitter_publisher_id, twitter_publisher_name
 ORDER BY total_published_articles DESC"""
-publishers = spark.sql(publishers_query)
+#publishers = spark.sql(publishers_query)
 print('--- publishers ---')
 #print(publishers.printSchema())
 #print(publishers.show())
 
 #column families: name, article_stats, twiter_stats
-table = 'publishers_test'
-write_to_file(publishers.select('row_key', 'twitter_publisher_name'), table, 'name')
-write_to_file(publishers.select('row_key', 'total_published_articles', 'total_published_opinions', 'published_opinions_fraction', 'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
-              table, 'article_stats')
-write_to_file(publishers.select('row_key', 'publisher_followers', 'tweets_mentioning_articles_sum'),
-              table, 'twitter_stats')
+#table = 'publishers_test'
+#write_to_file(publishers.select('row_key', 'twitter_publisher_name'), table, 'name')
+#write_to_file(publishers.select('row_key', 'total_published_articles', 'total_published_opinions', 'published_opinions_fraction', 'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
+#              table, 'article_stats')
+#write_to_file(publishers.select('row_key', 'publisher_followers', 'tweets_mentioning_articles_sum'),
+#              table, 'twitter_stats')
 
 # topics summary
 topics_query = """ 
-SELECT article_topic,
-    article_topic AS row_key,
+SELECT topic,
+    topic AS row_key,
     COUNT(*) AS total_published_articles,
     ROUND(SUM(CAST(confident_positive_sentiment AS INT)) / COUNT(*), 3) AS articles_with_positive_sentiment_fraction,
     ROUND(SUM(CAST(confident_negative_sentiment AS INT)) / COUNT(*), 3) AS articles_with_negative_sentiment_fraction,
     SUM(article_number_of_tweets) AS tweets_mentioning_articles_sum
-FROM articles_with_sentiment
-GROUP BY article_topic
+FROM articles_tweets
+GROUP BY topic
 ORDER BY total_published_articles DESC
 """ 
 topics = spark.sql(topics_query)
 
 print('--- topics ---')
-#print(topics.printSchema())
-#print(topics.show())
+print(topics.printSchema())
+print(topics.show())
 
 # column families: article_stats, twitter_stats, name
 
-table = 'topics_test'
-write_to_file(topics.select('row_key', 'article_topic'), table, 'name')
-write_to_file(topics.select('row_key', 'total_published_articles', 'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
-              table, 'article_stats')
-write_to_file(topics.select('row_key', 'tweets_mentioning_articles_sum'), table, 'twitter_stats')
+#table = 'topics'
+#write_to_file(topics.select('row_key', 'topic'), table, 'name')
+#write_to_file(topics.select('row_key', 'total_published_articles', #'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
+#              table, 'article_stats')
+#write_to_file(topics.select('row_key', 'tweets_mentioning_articles_sum'), table, 'twitter_stats')
 
