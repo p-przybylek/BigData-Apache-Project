@@ -130,31 +130,3 @@ write_to_file(topics.select('row_key', 'topic'), table, 'name')
 write_to_file(topics.select('row_key', 'total_published_articles', 'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
               table, 'article_stats')
 write_to_file(topics.select('row_key', 'tweets_mentioning_articles_sum'), table, 'twitter_stats')
-
-
-# locations summary
-locations_query = """ 
-SELECT country,
-    country AS row_key,
-    COUNT(*) AS total_published_articles,
-    ROUND(SUM(CAST(confident_positive_sentiment AS INT)) / COUNT(*), 3) AS articles_with_positive_sentiment_fraction,
-    ROUND(SUM(CAST(confident_negative_sentiment AS INT)) / COUNT(*), 3) AS articles_with_negative_sentiment_fraction,
-    SUM(article_number_of_tweets) AS tweets_mentioning_articles_sum
-FROM articles_tweets
-GROUP BY country
-ORDER BY total_published_articles DESC
-""" 
-#locations = spark.sql(locations_query)
-
-#print('--- locations ---')
-#print(locations.printSchema())
-#print(locations.show())
-
-# column families: article_stats, twitter_stats, name
-
-#table = 'locations'
-#write_to_file(topics.select('row_key', 'topic'), table, 'name')
-#write_to_file(topics.select('row_key', 'total_published_articles', #'articles_with_positive_sentiment_fraction', 'articles_with_negative_sentiment_fraction'),
-#              table, 'article_stats')
-#write_to_file(topics.select('row_key', 'tweets_mentioning_articles_sum'), table, 'twitter_stats')
-
