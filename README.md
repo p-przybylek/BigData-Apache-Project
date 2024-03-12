@@ -1,8 +1,8 @@
-# 2021Z-SDBD-ProblemPlanProblems
+# Big Data-Apache-Project
 
 A repository for a team project with Big Data.
 
-## The members of the ProblemPlanProblems team
+## The members of the "ProblemPlanProblems" team
 
 1. Przemysław Chojecki
 2. Paweł Morgen
